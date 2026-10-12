@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f2f8ef">
+    <title>BrainBox — Quick Quiz</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --green: #287a4b;
+            --green-dark: #1d6039;
+            --green-soft: #eaf5e9;
+            --ink: #20332a;
+            --muted: #78867d;
+            --line: #e8eee7;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background: #f2f8ef;
+            color: var(--ink);
+            font-family: 'DM Sans', Arial, sans-serif;
+        }
+
+        button { font: inherit; }
+
+        .page-shell {
+            width: min(100% - 40px, 1000px);
+            min-height: 100vh;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            height: 88px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--ink);
+            font-family: 'Manrope', Arial, sans-serif;
+            font-size: 21px;
+            font-weight: 800;
+            text-decoration: none;
+            letter-spacing: -1px;
+        }
+
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 11px;
+            background: var(--green);
+            color: white;
+            font-size: 19px;
+        }
+
+        .brand-accent { color: var(--green); }
+        .top-note { color: var(--muted); font-size: 13px; font-weight: 600; }
+        .online-dot { width: 8px; height: 8px; display: inline-block; margin-right: 7px; border-radius: 50%; background: #70bd76; }
+
+        .quiz-card {
+            position: relative;
+            isolation: isolate;
+            width: min(100%, 650px);
+            min-height: 560px;
+            margin: auto;
+            padding: 48px 58px 42px;
+            overflow: hidden;
+            border: 1px solid rgba(227, 237, 224, .9);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, .96);
+            box-shadow: 0 24px 70px rgba(45, 84, 54, .09);
+        }
+
+        #quiz-view, .result-view { position: relative; z-index: 1; }
+        .card-decoration { position: absolute; z-index: -1; border-radius: 50%; background: #f4f9f1; }
+        .decoration-one { width: 170px; height: 170px; top: -110px; right: -48px; }
+        .decoration-two { width: 95px; height: 95px; bottom: -67px; left: -45px; background: #f8faf3; }
+
+        .eyebrow {
+            margin-bottom: 14px;
+            color: var(--green);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.6px;
+        }
+
+        .eyebrow span { margin-right: 5px; font-size: 15px; }
+        h1, h2, p { margin-top: 0; }
+        h1 { margin-bottom: 9px; font-family: 'Manrope', Arial, sans-serif; font-size: clamp(30px, 5vw, 40px); line-height: 1.15; letter-spacing: -1.8px; }
+        h1 > span { color: var(--green); }
+        .intro { margin-bottom: 34px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+        .quiz-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: #87938a; font-size: 10px; font-weight: 800; letter-spacing: 1px; }
+        .score-pill { padding: 7px 11px; border-radius: 20px; background: #f4f8f2; color: #78867d; font-size: 11px; font-weight: 700; letter-spacing: 0; }
+        .score-pill span:first-child { color: #e4a935; }
+        .progress-track { height: 6px; margin-bottom: 30px; overflow: hidden; border-radius: 10px; background: #edf2eb; }
+        .progress-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #55a66b, #287a4b); transition: width .35s ease; }
+        .question { margin-bottom: 19px; font-family: 'Manrope', Arial, sans-serif; font-size: 21px; line-height: 1.45; letter-spacing: -.45px; }
+        .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+        .answer-button { min-height: 52px; padding: 12px 15px; border: 1px solid var(--line); border-radius: 12px; background: white; color: #425148; text-align: left; cursor: pointer; transition: border-color .18s, background .18s, transform .18s; }
+        .answer-button:hover:not(:disabled) { transform: translateY(-2px); border-color: #9bcaa2; background: #fbfef9; }
+        .answer-button:focus-visible, .next-button:focus-visible { outline: 3px solid #a8d5ad; outline-offset: 3px; }
+        .answer-button:disabled { cursor: default; }
+        .answer-button.correct { border-color: #64b47a; background: #edf8ee; color: #236c3b; }
+        .answer-button.incorrect { border-color: #e8a09b; background: #fff2f0; color: #a1433c; }
+        .feedback { min-height: 29px; padding-top: 12px; color: var(--muted); font-size: 13px; font-weight: 600; }
+        .feedback.is-correct { color: #287a4b; }
+        .feedback.is-wrong { color: #b55a4d; }
+        .next-button { min-width: 175px; margin-top: 5px; padding: 13px 18px; border: 0; border-radius: 11px; background: var(--green); color: white; font-weight: 700; cursor: pointer; transition: background .2s, transform .2s; }
+        .next-button:hover { transform: translateY(-1px); background: var(--green-dark); }
+        .next-button span { margin-left: 8px; font-size: 17px; }
+
+        .result-view { min-height: 465px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .result-icon { width: 72px; height: 72px; display: grid; place-items: center; margin-bottom: 22px; border-radius: 24px; background: var(--green-soft); font-size: 34px; }
+        .result-view h1 { margin-bottom: 10px; }
+        .result-message { max-width: 350px; margin-bottom: 25px; color: var(--muted); line-height: 1.6; }
+        .final-score { color: var(--green); font-family: 'Manrope', Arial, sans-serif; font-size: 57px; font-weight: 800; line-height: 1; letter-spacing: -3px; }
+        .score-total { color: #a4afa7; font-size: 25px; letter-spacing: -1px; }
+        .score-caption { margin: 8px 0 19px; color: var(--muted); font-size: 12px; }
+        .play-again { margin-top: 0; }
+
+        footer { padding: 26px 0 22px; color: #89958b; text-align: center; font-size: 12px; }
+        footer span { color: #df8177; }
+        [hidden] { display: none !important; }
+
+        @media (max-width: 600px) {
+            .page-shell { width: min(100% - 28px, 460px); }
+            .topbar { height: 72px; }
+            .top-note { font-size: 11px; }
+            .quiz-card { min-height: 0; margin: 28px auto; padding: 35px 23px 30px; border-radius: 20px; }
+            .intro { margin-bottom: 28px; }
+            .question { font-size: 19px; }
+            .answers { grid-template-columns: 1fr; gap: 9px; }
+            .answer-button { min-height: 48px; }
+            .result-view { min-height: 420px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page-shell">
+        <header class="topbar">
+            <a class="brand" href="#" aria-label="BrainBox home">
+                <span class="brand-mark" aria-hidden="true">✦</span>
+                <span>Brain<span class="brand-accent">Box</span></span>
+            </a>
+            <span class="top-note"><span class="online-dot"></span> A little quiz, a lot of fun</span>
+        </header>
+
+        <section class="quiz-card" aria-labelledby="quiz-title">
+            <div class="card-decoration decoration-one" aria-hidden="true"></div>
+            <div class="card-decoration decoration-two" aria-hidden="true"></div>
+
+            <div id="quiz-view">
+                <div class="eyebrow"><span aria-hidden="true">✧</span> THE DAILY BRAIN BOOST</div>
+                <h1 id="quiz-title">Ready to <span>play?</span></h1>
+                <p class="intro">Ten quick questions. One happy brain. Let’s see what you know!</p>
+
+                <div class="quiz-meta">
+                    <span id="question-count">QUESTION 1 OF 10</span>
+                    <span class="score-pill"><span aria-hidden="true">★</span> <span id="live-score">0</span> points</span>
+                </div>
+                <div class="progress-track" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+
+                <h2 class="question" id="question-text"></h2>
+                <div class="answers" id="answers" aria-label="Answer choices"></div>
+                <div class="feedback" id="feedback" aria-live="polite"></div>
+                <button class="next-button" id="next-button" type="button" hidden>Next question <span aria-hidden="true">→</span></button>
+            </div>
+
+            <div id="result-view" class="result-view" hidden>
+                <div class="result-icon" id="result-icon" aria-hidden="true">🎉</div>
+                <div class="eyebrow">QUIZ COMPLETE</div>
+                <h1 id="result-title">Brilliant work!</h1>
+                <p class="result-message" id="result-message"></p>
+                <div class="final-score"><span id="final-score">0</span><span class="score-total">/ 10</span></div>
+                <p class="score-caption">Your BrainBox score</p>
+                <button class="next-button play-again" id="restart-button" type="button">Play again <span aria-hidden="true">↻</span></button>
+            </div>
+        </section>
+
+        <footer>Made for curious minds <span aria-hidden="true">♥</span></footer>
+    </main>
+    <script>
+        const questions = [
+            { question: "What is the capital city of Pakistan?", answers: ["Karachi", "Islamabad", "Lahore", "Peshawar"], correct: 1 },
+            { question: "Which planet is known as the Red Planet?", answers: ["Venus", "Jupiter", "Mars", "Mercury"], correct: 2 },
+            { question: "How many sides does a hexagon have?", answers: ["Five", "Six", "Seven", "Eight"], correct: 1 },
+            { question: "Which animal is the largest mammal on Earth?", answers: ["African elephant", "Giraffe", "Blue whale", "Polar bear"], correct: 2 },
+            { question: "What do bees collect from flowers to make honey?", answers: ["Nectar", "Dew", "Sap", "Pollen only"], correct: 0 },
+            { question: "Which ocean is the largest?", answers: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"], correct: 3 },
+            { question: "What is the closest star to Earth?", answers: ["Sirius", "The Sun", "Polaris", "Proxima Centauri"], correct: 1 },
+            { question: "How many minutes are there in one hour?", answers: ["50", "55", "60", "100"], correct: 2 },
+            { question: "Which of these is a primary color of light?", answers: ["Green", "Orange", "Purple", "Brown"], correct: 0 },
+            { question: "On which continent is Egypt?", answers: ["Asia", "Africa", "Europe", "South America"], correct: 1 }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        const questionCount = document.getElementById("question-count");
+        const questionText = document.getElementById("question-text");
+        const answersContainer = document.getElementById("answers");
+        const feedback = document.getElementById("feedback");
+        const nextButton = document.getElementById("next-button");
+        const progressFill = document.getElementById("progress-fill");
+        const progressTrack = document.querySelector(".progress-track");
+        const liveScore = document.getElementById("live-score");
+        const quizView = document.getElementById("quiz-view");
+        const resultView = document.getElementById("result-view");
+
+        function showQuestion() {
+            const item = questions[currentQuestion];
+            questionCount.textContent = `QUESTION ${currentQuestion + 1} OF ${questions.length}`;
+            questionText.textContent = item.question;
+            answersContainer.replaceChildren();
+            feedback.textContent = "";
+            feedback.className = "feedback";
+            nextButton.hidden = true;
+            progressFill.style.width = `${(currentQuestion / questions.length) * 100}%`;
+            progressTrack.setAttribute("aria-valuenow", currentQuestion);
+
+            item.answers.forEach((answer, index) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "answer-button";
+                button.textContent = answer;
+                button.addEventListener("click", () => chooseAnswer(index));
+                answersContainer.appendChild(button);
+            });
+        }
+
+        function chooseAnswer(selectedIndex) {
+            const correctIndex = questions[currentQuestion].correct;
+            const buttons = answersContainer.querySelectorAll("button");
+            buttons.forEach((button) => { button.disabled = true; });
+
+            if (selectedIndex === correctIndex) {
+                score += 1;
+                liveScore.textContent = score;
+                buttons[selectedIndex].classList.add("correct");
+                feedback.textContent = "That’s right — great job! ✨";
+                feedback.classList.add("is-correct");
+            } else {
+                buttons[selectedIndex].classList.add("incorrect");
+                buttons[correctIndex].classList.add("correct");
+                feedback.textContent = `Not quite! The answer is ${questions[currentQuestion].answers[correctIndex]}.`;
+                feedback.classList.add("is-wrong");
+            }
+
+            progressFill.style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+            progressTrack.setAttribute("aria-valuenow", currentQuestion + 1);
+            nextButton.textContent = currentQuestion === questions.length - 1 ? "See my score" : "Next question →";
+            nextButton.hidden = false;
+        }
+
+        function showResults() {
+            quizView.hidden = true;
+            resultView.hidden = false;
+            document.getElementById("final-score").textContent = score;
+
+            let title = "Lovely effort!";
+            let message = "Every question is a chance to learn something new. Fancy another round?";
+            let icon = "🌱";
+
+            if (score === questions.length) {
+                title = "Perfect score!";
+                message = "You got every answer right. Your brain is absolutely glowing!";
+                icon = "🏆";
+            } else if (score >= 7) {
+                title = "Brilliant work!";
+                message = "You know your stuff! That was a fantastic round.";
+                icon = "🎉";
+            } else if (score >= 4) {
+                title = "Nice going!";
+                message = "You’re on your way to becoming a quiz superstar. Keep it up!";
+                icon = "✨";
+            }
+
+            document.getElementById("result-title").textContent = title;
+            document.getElementById("result-message").textContent = message;
+            document.getElementById("result-icon").textContent = icon;
+        }
+
+        nextButton.addEventListener("click", () => {
+            currentQuestion += 1;
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        document.getElementById("restart-button").addEventListener("click", () => {
+            currentQuestion = 0;
+            score = 0;
+            liveScore.textContent = "0";
+            resultView.hidden = true;
+            quizView.hidden = false;
+            showQuestion();
+        });
+
+        showQuestion();
+    </script>
+</body>
+</html>
